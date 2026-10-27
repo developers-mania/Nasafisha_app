@@ -10,7 +10,7 @@ const emit = defineEmits<{
 }>()
 const { t } = useI18n()
 
-// Citizens sign in with a phone number, so they are not managed here.
+// Citizens sign in with an email code, so they are not managed here.
 const ASSIGNABLE: Role[] = [
   ROLES.EXECUTIVE, ROLES.OPERATIONS_MANAGER, ROLES.FIELD_SUPERVISOR, ROLES.FIELD_CREW, ROLES.COUNTY_ICT_ADMIN,
 ]

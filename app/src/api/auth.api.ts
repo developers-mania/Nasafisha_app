@@ -2,73 +2,113 @@ import { api } from './http';
 import type { ApiResponse } from '../types/api';
 import type { User, AuthSession, LoginCredentials, UserRole } from '../types/user';
 
-// Mock test credentials for local demo
-const MOCK_USERS: Record<UserRole, User> = {
-  admin: {
-    id: 'usr_adm_01',
-    name: 'Kelvin Kamau (Super Admin)',
-    email: 'admin@nasafisha.nakuru.go.ke',
-    role: 'admin',
-    assignedZone: 'All Nakuru Zones',
-  },
-  citizen: {
-    id: 'usr_ctz_01',
-    name: 'Wanjiru Mwangi',
-    phone: '+254 712 345 678',
-    role: 'citizen',
-    assignedZone: 'Nakuru East - Section 58',
-  },
-  field: {
-    id: 'usr_fld_01',
-    name: 'Brian Omondi',
-    badgeNumber: 'FLD-2026-44',
-    role: 'field',
-    assignedZone: 'Zone B — Bondeni / Kivumbini',
-  },
-  contractor: {
-    id: 'usr_cnt_01',
-    name: 'Winfred Njeri (Compliance Lead)',
-    companyName: 'Nakuru Green Clean Franchise Ltd',
-    contractorId: 'CNT-NK-003',
-    role: 'contractor',
-    assignedZone: 'Nakuru East Franchise Area',
-  },
-};
+interface BackendUser extends Omit<User, 'role'> {
+  role: string;
+  zone?: string;
+}
+
+interface BackendSession {
+  token: string;
+  user: BackendUser;
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === 'object' && 'error' in error) {
+    const apiError = (error as ApiResponse).error;
+    if (apiError?.message) return apiError.message;
+  }
+  return fallback;
+}
+
+function toFrontendSession(
+  session: BackendSession,
+  role: UserRole,
+): AuthSession {
+  return {
+    token: session.token,
+    user: {
+      ...session.user,
+      role,
+      assignedZone: session.user.zone ?? session.user.assignedZone,
+    },
+  };
+}
+
+function frontendRole(role: string): UserRole {
+  if (role === 'citizen') return 'citizen';
+  if (role === 'field_crew' || role === 'field_supervisor') return 'field';
+  return 'admin';
+}
 
 export const authApi = {
-  /**
-   * Unified login supporting admin, citizen, field, and contractor credentials
-   */
   async login(payload: LoginCredentials): Promise<ApiResponse<AuthSession>> {
+    if (payload.role === 'citizen') {
+      throw new Error('Citizens sign in with an email code. Request a code first.');
+    }
+
+    if (payload.role === 'contractor') {
+      throw new Error('Contractor sign-in is not available in the backend yet.');
+    }
+
+    const response =
+      payload.role === 'admin'
+        ? await api.post<BackendSession>('/auth/admin/login', {
+            email: payload.email,
+            password: payload.password,
+          })
+        : await api.post<BackendSession>('/auth/crew/login', {
+            employeeId: payload.contractorCode,
+            pin: payload.password,
+          });
+
+    if (!response.success || !response.data) {
+      throw new Error(response.error?.message || 'Authentication failed.');
+    }
+
+    return {
+      ...response,
+      data: toFrontendSession(response.data, payload.role),
+    };
+  },
+
+  async requestCitizenCode(email: string): Promise<void> {
     try {
-      const response = await api.post<AuthSession>('/auth/login', payload);
-      return response;
-    } catch {
-      // Mock fallback for standalone frontend development
-      const targetUser = MOCK_USERS[payload.role] || {
-        id: `usr_${Date.now()}`,
-        name: payload.email || payload.phone || payload.contractorCode || 'Authorized User',
-        role: payload.role,
-      };
-
-      const mockSession: AuthSession = {
-        token: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify(targetUser))}.mock_signature_2026`,
-        user: targetUser,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      };
-
-      return {
-        success: true,
-        data: mockSession,
-        message: `Authenticated successfully as ${payload.role}`,
-      };
+      const response = await api.post<{ email: string }>('/auth/otp/request', {
+        email,
+      });
+      if (!response.success) {
+        throw new Error(response.error?.message || 'Could not send an email code.');
+      }
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Could not send an email code.'));
     }
   },
 
-  /**
-   * Contractor portal specific login
-   */
-  async loginContractor(contractorCode: string, accessKey: string): Promise<ApiResponse<AuthSession>> {
+  async verifyCitizenCode(
+    email: string,
+    code: string,
+    name?: string,
+  ): Promise<AuthSession> {
+    try {
+      const response = await api.post<BackendSession>('/auth/otp/verify', {
+        email,
+        code,
+        name,
+      });
+      if (!response.success || !response.data) {
+        throw new Error(response.error?.message || 'Email code verification failed.');
+      }
+      return toFrontendSession(response.data, 'citizen');
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Email code verification failed.'));
+    }
+  },
+
+  async loginContractor(
+    contractorCode: string,
+    accessKey: string,
+  ): Promise<ApiResponse<AuthSession>> {
     return this.login({
       contractorCode,
       password: accessKey,
@@ -76,70 +116,50 @@ export const authApi = {
     });
   },
 
-  /**
-   * Citizen OTP authentication (FR-001)
-   */
-  async loginCitizen(phone: string, otp: string): Promise<ApiResponse<AuthSession>> {
-    return this.login({
-      phone,
-      otp,
-      role: 'citizen',
-    });
+  async loginCitizen(
+    email: string,
+    code: string,
+  ): Promise<ApiResponse<AuthSession>> {
+    return {
+      success: true,
+      data: await this.verifyCitizenCode(email, code),
+      message: 'Authenticated successfully as citizen',
+    };
   },
 
-  /**
-   * Staff login (Admin)
-   */
-  async loginStaff(email: string, password: string): Promise<ApiResponse<AuthSession>> {
-    return this.login({
-      email,
-      password,
-      role: 'admin',
-    });
+  async loginStaff(
+    email: string,
+    password: string,
+  ): Promise<ApiResponse<AuthSession>> {
+    return this.login({ email, password, role: 'admin' });
   },
 
-  /**
-   * Field crew PIN authentication (FR-002)
-   */
-  async loginField(badgeNumber: string, pin: string): Promise<ApiResponse<AuthSession>> {
+  async loginField(
+    employeeId: string,
+    pin: string,
+  ): Promise<ApiResponse<AuthSession>> {
     return this.login({
-      contractorCode: badgeNumber,
+      contractorCode: employeeId,
       password: pin,
       role: 'field',
     });
   },
 
-  /**
-   * Validate current session
-   */
   async me(): Promise<ApiResponse<User>> {
-    try {
-      return await api.get<User>('/auth/me');
-    } catch {
-      const savedUserStr = localStorage.getItem('nasafisha_auth_user');
-      if (savedUserStr) {
-        return {
-          success: true,
-          data: JSON.parse(savedUserStr),
-          message: 'Session valid',
-        };
-      }
-      throw {
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'No active session' },
-      };
-    }
+    const response = await api.get<BackendUser>('/auth/me');
+    if (!response.success || !response.data) return response;
+
+    return {
+      ...response,
+      data: {
+        ...response.data,
+        role: frontendRole(response.data.role),
+        assignedZone: response.data.zone ?? response.data.assignedZone,
+      },
+    };
   },
 
-  /**
-   * Logout
-   */
   async logout(): Promise<ApiResponse<null>> {
-    try {
-      await api.post('/auth/logout');
-    } catch {
-      // Ignore network errors on logout
-    }
     localStorage.removeItem('nasafisha_auth_token');
     localStorage.removeItem('nasafisha_auth_user');
     return {

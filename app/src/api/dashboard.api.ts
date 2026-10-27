@@ -1,29 +1,35 @@
-import type { EfficiencyIndex } from "../types/efficiencyIndex";
-import type { Hotspot } from "../types/hotspot";
-import type { Zone } from "../types/zone";
-
-const API_URL = "http://localhost:3000";
-
-export interface DashboardSummary {
-    totalZones: number;
-    activeVehicles: number;
-    pendingTickets: number;
-    cleanlinessScore: number;
-}
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 
 export interface DashboardData {
-    summary: DashboardSummary;
-    zones: Zone[];
-    hotspots: Hotspot[];
-    efficiencyIndex: EfficiencyIndex[];
+  missed: number;
+  collectionRate: number;
+  avgResolutionHours: number;
+  routeAdherence: number;
+  ticketsOpened: number;
+  cleanlinessScore: number;
 }
 
+type WeeklyMetrics = Omit<DashboardData, 'cleanlinessScore'>;
+
 export async function getDashboardData(): Promise<DashboardData> {
-    const response = await fetch(`${API_URL}/dashboard`);
+  const weeklyResponse = await fetch(`${API_URL}/dashboard/week`);
+  if (!weeklyResponse.ok) {
+    throw new Error(`Failed to load dashboard data (HTTP ${weeklyResponse.status}).`);
+  }
+  const weekly = (await weeklyResponse.json()) as WeeklyMetrics;
 
-    if (!response.ok) {
-        throw new Error("Failed to load dashboard data");
-    }
+  const params = new URLSearchParams({
+    collectionRate: String(weekly.collectionRate),
+    avgResolutionHours: String(weekly.avgResolutionHours),
+    routeAdherence: String(weekly.routeAdherence),
+  });
+  const scoreResponse = await fetch(`${API_URL}/dashboard/score?${params}`);
+  if (!scoreResponse.ok) {
+    throw new Error(`Failed to load the cleanliness score (HTTP ${scoreResponse.status}).`);
+  }
 
-    return response.json();
+  return {
+    ...weekly,
+    cleanlinessScore: (await scoreResponse.json()) as number,
+  };
 }

@@ -50,22 +50,23 @@
 </template>
 
 <script setup lang="ts">
+import { computed, onMounted } from 'vue';
 import { useOnboardingI18n } from '../../composables/useOnboardingI18n';
+import { useReportsStore } from '../../store/reports.store';
 
 const { t } = useOnboardingI18n();
+const store = useReportsStore();
 
-const reports = [
-  {
-    reference: 'NSF-260915-0042',
-    category: 'Missed collection',
-    section: 'Section 5B',
-    status: 'inProgress' as const,
-  },
-  {
-    reference: 'NSF-260992-0017',
-    category: 'Illegal dumping',
-    section: 'Lanesi',
-    status: 'resolved' as const,
-  },
-];
+const reports = computed(() =>
+  store.reports.slice(0, 3).map((report) => ({
+    reference: report.reference,
+    category: report.title,
+    section: report.location,
+    status: report.status === 'Resolved' ? 'resolved' as const : 'inProgress' as const,
+  })),
+);
+
+onMounted(() => {
+  void store.loadMine();
+});
 </script>

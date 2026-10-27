@@ -8,7 +8,7 @@ This repository is organized so the application code lives under an `app/` direc
 Nasafisha_app/
 ├── README.md
 ├── app/
-│   ├── .env
+│   ├── .env.example
 │   ├── .env.example
 │   ├── .gitignore
 │   ├── .prettierrc
@@ -67,15 +67,22 @@ npm install
 npm run dev
 ```
 
-To run the mock API locally:
+The Vite app uses `http://localhost:4000` for the backend by default. To
+override it, copy `app/.env.example` to `app/.env.local` and change
+`VITE_API_BASE_URL` and `VITE_API_URL`. Citizen sign-in uses the backend's
+Supabase email-code endpoints; it does not use a mock login.
+
+Start the backend and its database in a separate terminal:
 
 ```bash
-npm install -g json-server
-json-server --watch data/db.json
+cd ..\..\Nasafisha_api\Nasafisha_api
+docker compose up -d nest-db
+npm run start:dev
 ```
 
 ## Notes
 
 - The frontend app root is `app/`.
-- Copy `app/.env.example` to `app/.env` for local configuration; `.env` files are ignored by Git.
+- Frontend environment files are ignored by Git. Use `.env.local` for local settings.
+- The backend allows `http://localhost:5173` by default; configure `CORS_ORIGINS` for other origins.
 - Built-in config and tooling are already in place for Vite, Vue, Tailwind, ESLint, Vitest, and Playwright.

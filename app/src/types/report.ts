@@ -28,4 +28,5 @@ export interface CreateReportPayload {
   latitude?: number;
   longitude?: number;
   photoDataUrl?: string;
+  capturedAt?: string;
 }

@@ -21,7 +21,7 @@
       v-if="store.error && !store.isLoading"
       class="mt-4 rounded-xl bg-[var(--ns-status-progress-bg,#FFF1CC)] px-4 py-3 text-xs text-[var(--ns-status-progress-fg,#7A4B00)]"
     >
-      Showing recent reports — we couldn't reach the server.
+      We couldn't load your reports from the server. Try again when your connection is restored.
     </p>
 
     <!-- Report list -->
@@ -62,14 +62,7 @@ const pills = [
   { id: 'resolved' as const, label: 'Resolved' },
 ];
 
-// Shown until the API returns the citizen's reports (and whenever it is unreachable).
-const SEED: Report[] = [
-  { id: 1, reference: 'NSF-260915-0043', title: 'Missed collection', location: 'Blessed 5B, Nakuru', status: 'Submitted', updated: 'today 08:14' },
-  { id: 2, reference: 'NSF-260915-0042', title: 'Missed collection', location: 'Blessed 5B, Nakuru', status: 'In review', updated: '15/09/2026' },
-  { id: 3, reference: 'NSF-260982-0017', title: 'Illegal dumping', location: 'Section 58, Nakuru', status: 'Resolved', updated: '02/09/2026' },
-];
-
-const reports = computed<Report[]>(() => (store.reports.length ? store.reports : SEED));
+const reports = computed(() => store.reports);
 
 const filteredReports = computed(() => {
   if (filter.value === 'open') return reports.value.filter((r) => r.status !== 'Resolved');

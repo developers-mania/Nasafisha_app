@@ -14,9 +14,9 @@
       {{ t('otp.title') }}
     </h1>
     <p class="mt-2 text-sm text-[var(--ns-ash-600,#4F5B57)]">
-      {{ t('otp.subtitle', { phone: maskedPhone }) }}
+      {{ t('otp.subtitle', { email }) }}
       <router-link to="/citizen/login" class="font-medium text-[var(--ns-leaf-700,#15803D)] underline underline-offset-2">
-        {{ t('otp.wrongNumber') }}
+        {{ t('otp.wrongEmail') }}
       </router-link>
     </p>
 
@@ -47,7 +47,18 @@
     </p>
 
     <p class="mt-4 text-xs text-[var(--ns-ash-600,#4F5B57)]">
-      {{ t('otp.resend') }} <span class="font-mono font-semibold">{{ timerLabel }}</span>
+      <template v-if="secondsLeft > 0">
+        {{ t('otp.resend') }} <span class="font-mono font-semibold">{{ timerLabel }}</span>
+      </template>
+      <button
+        v-else
+        type="button"
+        class="font-semibold text-[var(--ns-leaf-700,#15803D)] underline underline-offset-2 disabled:opacity-50"
+        :disabled="resending"
+        @click="resend"
+      >
+        {{ resending ? t('otp.resending') : t('otp.resendNow') }}
+      </button>
     </p>
 
     <button
@@ -66,6 +77,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import CitizenOnboardLayout from '../../../layouts/CitizenOnboardLayout.vue';
 import { useOnboardingI18n } from '../../../composables/useOnboardingI18n';
+import { authApi } from '../../../api/auth.api';
 import { useAuthStore } from '../../../store/auth.store';
 
 const router = useRouter();
@@ -74,12 +86,11 @@ const authStore = useAuthStore();
 const digits = ref<string[]>(['', '', '', '', '', '']);
 const error = ref('');
 const confirming = ref(false);
-const triesLeft = ref(3);
-const secondsLeft = ref(24);
+const resending = ref(false);
+const secondsLeft = ref(300);
 const boxes = ref<HTMLInputElement[]>([]);
 
-const phone = sessionStorage.getItem('ns_phone') || '+254 712 345 678';
-const maskedPhone = phone;
+const email = sessionStorage.getItem('ns_email') || '';
 
 const code = computed(() => digits.value.join(''));
 
@@ -92,6 +103,10 @@ const timerLabel = computed(() => {
 let timer: ReturnType<typeof setInterval> | undefined;
 
 onMounted(() => {
+  if (!email) {
+    void router.replace('/citizen/login');
+    return;
+  }
   boxes.value[0]?.focus();
   timer = setInterval(() => {
     if (secondsLeft.value > 0) secondsLeft.value -= 1;
@@ -117,31 +132,36 @@ function onPaste(e: ClipboardEvent) {
   for (let i = 0; i < 6; i++) digits.value[i] = text[i] ?? '';
 }
 
-async function confirm() {
-  // Mock: accept any 6-digit code; "000000" exercises the error state.
-  if (code.value === '000000') {
-    triesLeft.value = Math.max(0, triesLeft.value - 1);
-    error.value = t('otp.error', { tries: triesLeft.value });
-    return;
-  }
-  confirming.value = true;
+async function resend() {
+  error.value = '';
+  resending.value = true;
   try {
-    // Mock SMS sign-in/register: establish a citizen session so the portal guards let
-    // the flow continue past permissions into /citizen. Registered accounts take the
-    // name entered on /citizen/register.
-    const isRegister = sessionStorage.getItem('ns_auth_mode') === 'register';
-    const displayName = isRegister ? sessionStorage.getItem('ns_name') || 'Citizen' : 'Citizen';
-    authStore.setSession({
-      token: `mock-otp-${code.value}`,
-      user: {
-        id: 'citizen-mock',
-        name: displayName,
-        phone,
-        role: 'citizen',
-      },
-    });
+    await authApi.requestCitizenCode(email);
+    digits.value = ['', '', '', '', '', ''];
+    secondsLeft.value = 300;
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : t('email.error');
+  } finally {
+    resending.value = false;
+  }
+}
+
+async function confirm() {
+  confirming.value = true;
+  error.value = '';
+  try {
+    const name =
+      sessionStorage.getItem('ns_auth_mode') === 'register'
+        ? sessionStorage.getItem('ns_name') || undefined
+        : undefined;
+    const session = await authApi.verifyCitizenCode(email, code.value, name);
+    authStore.setSession(session);
     sessionStorage.removeItem('ns_auth_mode');
+    sessionStorage.removeItem('ns_name');
+    sessionStorage.removeItem('ns_email');
     await router.push('/citizen/onboarding/permissions');
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : t('otp.error');
   } finally {
     confirming.value = false;
   }

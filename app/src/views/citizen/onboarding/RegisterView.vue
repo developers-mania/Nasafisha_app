@@ -26,24 +26,33 @@
         class="mt-2 min-h-[56px] w-full rounded-xl border border-[var(--ns-ash-200,#D5DBD9)] px-4 text-base text-[var(--ns-ash-900,#17211F)] outline-none transition placeholder:text-[var(--ns-ash-400,#889490)] focus:border-[var(--ns-leaf-600,#16A34A)]"
       />
 
-      <label for="phone" class="mt-4 block text-sm font-medium text-[var(--ns-ash-900,#17211F)]">{{ t('register.phoneLabel') }}</label>
+      <label for="email" class="mt-4 block text-sm font-medium text-[var(--ns-ash-900,#17211F)]">{{ t('register.emailLabel') }}</label>
       <input
-        id="phone"
-        v-model="phone"
-        type="tel"
-        inputmode="tel"
-        autocomplete="tel"
-        :placeholder="t('phone.placeholder')"
+        id="email"
+        v-model="email"
+        type="email"
+        inputmode="email"
+        autocomplete="email"
+        required
+        :placeholder="t('register.emailPlaceholder')"
         class="mt-2 min-h-[56px] w-full rounded-xl border border-[var(--ns-ash-200,#D5DBD9)] px-4 text-base text-[var(--ns-ash-900,#17211F)] outline-none transition placeholder:text-[var(--ns-ash-400,#889490)] focus:border-[var(--ns-leaf-600,#16A34A)]"
       />
       <p class="mt-2 text-xs text-[var(--ns-ash-600,#4F5B57)]">{{ t('register.hint') }}</p>
 
+      <p
+        v-if="error"
+        role="alert"
+        class="mt-4 rounded-xl bg-[var(--ns-danger-bg,#FEE2E2)] px-4 py-4 text-sm font-medium text-[var(--ns-danger-fg,#991B1B)]"
+      >
+        {{ error }}
+      </p>
+
       <button
         type="submit"
         class="mt-5 rounded-lg bg-[var(--ns-leaf-700,#15803D)] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--ns-leaf-600,#16A34A)] disabled:cursor-not-allowed disabled:opacity-50"
-        :disabled="!name.trim() || !phone.trim()"
+        :disabled="!name.trim() || !email.trim() || sending"
       >
-        {{ t('register.submit') }}
+        {{ sending ? t('email.sending') : t('register.submit') }}
       </button>
     </form>
 
@@ -64,16 +73,31 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import CitizenOnboardLayout from '../../../layouts/CitizenOnboardLayout.vue';
 import { useOnboardingI18n } from '../../../composables/useOnboardingI18n';
+import { authApi } from '../../../api/auth.api';
 
 const router = useRouter();
 const { t } = useOnboardingI18n();
 const name = ref('');
-const phone = ref('');
+const email = ref('');
+const error = ref('');
+const sending = ref(false);
 
-function submit() {
-  sessionStorage.setItem('ns_auth_mode', 'register');
-  sessionStorage.setItem('ns_name', name.value.trim());
-  sessionStorage.setItem('ns_phone', phone.value.trim());
-  router.push('/citizen/login/otp');
+async function submit() {
+  error.value = '';
+  sending.value = true;
+  const normalizedEmail = email.value.trim().toLowerCase();
+
+  try {
+    await authApi.requestCitizenCode(normalizedEmail);
+    sessionStorage.setItem('ns_auth_mode', 'register');
+    sessionStorage.setItem('ns_name', name.value.trim());
+    sessionStorage.setItem('ns_email', normalizedEmail);
+    sessionStorage.removeItem('ns_phone');
+    await router.push('/citizen/login/otp');
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : t('email.error');
+  } finally {
+    sending.value = false;
+  }
 }
 </script>

@@ -7,11 +7,10 @@ import contractorRoutes from './routes/contractor.routes';
 import legacyRoutes from './routes/legacy.routes';
 import StaffLogin from '../views/auth/StaffLogin.vue';
 import AdminLogin from '../views/auth/AdminLogin.vue';
-import CitizenLogin from '../views/auth/CitizenLogin.vue';
 import LanguageView from '../views/citizen/onboarding/LanguageView.vue';
 import AuthChoiceView from '../views/citizen/onboarding/AuthChoiceView.vue';
 import RegisterView from '../views/citizen/onboarding/RegisterView.vue';
-import PhoneView from '../views/citizen/onboarding/PhoneView.vue';
+import EmailView from '../views/citizen/onboarding/EmailView.vue';
 import OtpView from '../views/citizen/onboarding/OtpView.vue';
 import PermissionsView from '../views/citizen/onboarding/PermissionsView.vue';
 import AllSetView from '../views/citizen/onboarding/AllSetView.vue';
@@ -63,7 +62,7 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
-  // Citizen onboarding: language → phone → OTP → camera/location (Figma mobile flow)
+  // Citizen onboarding: language → email code → camera/location.
   {
     path: '/citizen/welcome',
     name: 'CitizenLanguage',
@@ -95,7 +94,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/citizen/login',
     name: 'CitizenLogin',
-    component: PhoneView,
+    component: EmailView,
     meta: {
       guestOnly: true,
       title: 'Citizen Sign-In',
@@ -110,21 +109,9 @@ const routes: RouteRecordRaw[] = [
       title: 'Enter code',
     },
   },
-  // Email + password alternative to the phone/OTP flow
   {
     path: '/citizen/login/email',
-    component: AuthLayout,
-    children: [
-      {
-        path: '',
-        name: 'CitizenEmailLogin',
-        component: CitizenLogin,
-        meta: {
-          guestOnly: true,
-          title: 'Citizen Sign-In',
-        },
-      },
-    ],
+    redirect: '/citizen/login',
   },
   {
     path: '/citizen/onboarding/permissions',

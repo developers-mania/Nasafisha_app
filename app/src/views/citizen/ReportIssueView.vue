@@ -85,12 +85,21 @@
       </label>
       <p class="mt-1 text-right text-xs text-[var(--ns-ash-600,#4F5B57)]">{{ note.length }} / 200</p>
 
+      <p
+        v-if="error"
+        role="alert"
+        class="mt-4 rounded-xl bg-[var(--ns-danger-bg,#FEE2E2)] px-4 py-3 text-sm text-[var(--ns-danger-fg,#991B1B)]"
+      >
+        {{ error }}
+      </p>
+
       <button
         type="button"
-        class="mt-4 rounded-lg bg-[var(--ns-leaf-700,#15803D)] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--ns-leaf-600,#16A34A)]"
+        class="mt-4 rounded-lg bg-[var(--ns-leaf-700,#15803D)] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--ns-leaf-600,#16A34A)] disabled:cursor-not-allowed disabled:opacity-50"
+        :disabled="submitting || !photo"
         @click="sendReport"
       >
-        Send report
+        {{ submitting ? 'Sending report…' : 'Send report' }}
       </button>
     </template>
   </section>
@@ -100,12 +109,16 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import CameraCapture from '../../components/camera/CameraCapture.vue';
+import { reportsApi } from '../../api/reports.api';
 
 const router = useRouter();
 const photo = ref('');
 const note = ref('');
 const showCamera = ref(false);
 const issueType = ref<'missed' | 'dumping'>('missed');
+const capturedAt = ref('');
+const submitting = ref(false);
+const error = ref('');
 
 const issueOptions = [
   { id: 'missed' as const, title: "Waste wasn't collected", hint: "The truck didn't come, or skipped us" },
@@ -114,10 +127,55 @@ const issueOptions = [
 
 function handleCaptured(dataUrl: string) {
   photo.value = dataUrl;
+  capturedAt.value = new Date().toISOString();
   showCamera.value = false;
 }
 
-function sendReport() {
-  router.push('/citizen/reports/sent/NSF-260915-0043');
+function getLocation(): Promise<{ latitude: number; longitude: number }> {
+  if (!navigator.geolocation) {
+    return Promise.reject(new Error('Location is not available in this browser.'));
+  }
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) =>
+        resolve({
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+        }),
+      () => reject(new Error('Allow location access to submit this report.')),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    );
+  });
+}
+
+async function sendReport() {
+  if (!photo.value) {
+    error.value = 'Take a photo before sending your report.';
+    return;
+  }
+
+  submitting.value = true;
+  error.value = '';
+  try {
+    const location = await getLocation();
+    const report = await reportsApi.create({
+      type: issueType.value,
+      priority: 'normal',
+      description: note.value,
+      location: '',
+      latitude: location.latitude,
+      longitude: location.longitude,
+      photoDataUrl: photo.value,
+      capturedAt: capturedAt.value,
+    });
+    await router.push(
+      `/citizen/reports/sent/${encodeURIComponent(report.reference)}`,
+    );
+  } catch (err) {
+    error.value =
+      err instanceof Error ? err.message : 'Could not submit the report.';
+  } finally {
+    submitting.value = false;
+  }
 }
 </script>

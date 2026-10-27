@@ -23,7 +23,7 @@ const FILES = [
   'views/citizen/onboarding/LanguageView.vue',
   'views/citizen/onboarding/AuthChoiceView.vue',
   'views/citizen/onboarding/RegisterView.vue',
-  'views/citizen/onboarding/PhoneView.vue',
+  'views/citizen/onboarding/EmailView.vue',
   'views/citizen/onboarding/OtpView.vue',
   'views/citizen/onboarding/PermissionsView.vue',
   'views/citizen/onboarding/AllSetView.vue',
@@ -48,8 +48,8 @@ describe('citizen onboarding translations (en / sw)', () => {
   it('HomeView status labels exist, so a chip never shows a raw code', () => {
     for (const k of ['home.inProgress', 'home.resolved', 'home.noReports']) expect(k in en).toBe(true)
   })
-  it('the flow keeps its stages: language → phone → OTP → permissions → all-set → home', () => {
-    for (const prefix of ['lang', 'phone', 'otp', 'perm', 'done', 'home']) {
+  it('the flow keeps its stages: language → email → OTP → permissions → all-set → home', () => {
+    for (const prefix of ['lang', 'email', 'otp', 'perm', 'done', 'home']) {
       expect(Object.keys(en).some((k) => k.startsWith(`${prefix}.`))).toBe(true)
     }
   })

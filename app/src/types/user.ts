@@ -28,9 +28,7 @@ export interface AuthSession {
 
 export interface LoginCredentials {
   email?: string;
-  phone?: string;
   password?: string;
-  otp?: string;
   contractorCode?: string;
   role: UserRole;
 }

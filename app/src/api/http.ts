@@ -1,7 +1,7 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios';
 import type { ApiResponse } from '../types/api';
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 const TOKEN_KEY = 'nasafisha_auth_token';
 
 export const httpClient: AxiosInstance = axios.create({

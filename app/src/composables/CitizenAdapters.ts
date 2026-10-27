@@ -1,7 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────────────────────────
-// ADAPTERS for FE-022 / FE-024: the only file here that touches code I could not see.
-//   [WIRE]  = connected to api/reports.api.ts with an offline/demo fallback.
-//   [CHECK] = a guess that works only if it matches your router.
+// Adapters for citizen report responses and routes.
 // ─────────────────────────────────────────────────────────────────────────────────────────────────
 import { reportsApi } from '../api/reports.api'
 import type { Report } from '../types/report'
@@ -57,39 +55,16 @@ function mapReport(report: Report): CitizenReport {
   }
 }
 
-/** Demo record so the resolved wrap card renders when the API is unreachable (no json-server). */
-function mockReport(reference: string): CitizenReport {
-  const state: ReportState = 'RESOLVED'
-  return {
-    reference,
-    state,
-    history: historyUpTo(state, '2026-09-15T08:14:00+03:00', '2026-09-16T11:32:00+03:00'),
-    beforePhoto: null,
-    afterPhoto: null,
-    resolvedAt: '2026-09-16T11:32:00+03:00',
-    clusteredWithExisting: false,
-  }
-}
-
 /**
- * [WIRE → done] Load one report by its reference (FR-013.2: a resident can look up status by reference).
- * Reads api/reports.api.ts; offline (navigator offline or no server) falls back to a demo record so the
- * confirmation screens still render. Throws an error with `.code === 'NETWORK'` only when truly offline.
- * Returns null when the API answers and the reference does not exist.
+ * Load one report by its reference. Returns null when the API confirms it does
+ * not exist; connection and server errors are allowed to reach the caller.
  */
 export async function fetchReportByReference(reference: string): Promise<CitizenReport | null> {
   if (typeof navigator !== 'undefined' && navigator.onLine === false) throw offlineError()
   if (!reference) return null
-  try {
-    const list = await reportsApi.list()
-    const found = list.find((r) => r.reference === reference)
-    return found ? mapReport(found) : mockReport(reference)
-  } catch (e) {
-    if (errorCode(e) === 'NETWORK' || (typeof navigator !== 'undefined' && navigator.onLine === false)) {
-      throw offlineError()
-    }
-    return mockReport(reference)
-  }
+  const list = await reportsApi.list()
+  const found = list.find((r) => r.reference === reference)
+  return found ? mapReport(found) : null
 }
 
 // [CHECK] Where each button goes. Compare with router/routes/citizen.routes.ts and use your route names/paths.
