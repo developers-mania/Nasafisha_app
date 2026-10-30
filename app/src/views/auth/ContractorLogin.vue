@@ -1,60 +1,70 @@
 <template>
-  <div class="min-h-screen grid lg:grid-cols-[42fr_58fr]">
+  <div class="grid min-h-screen bg-white md:grid-cols-[42fr_58fr]">
     <!-- Brand panel -->
-    <aside class="hidden lg:flex flex-col justify-between bg-[var(--ns-lake-900,#0F2E27)] p-12 text-white">
-      <BrandLogo
-        size="lg"
-        :with-text="false"
-        :on-dark="true"
-      />
+    <aside class="hidden flex-col justify-between bg-[#20382F] p-12 text-white md:flex">
+      <div class="flex items-center gap-3">
+        <div class="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-white">
+          <img
+            src="/logo.png"
+            alt=""
+            aria-hidden="true"
+            class="relative left-[-8px] top-0 block h-auto w-12 max-w-none"
+          >
+        </div>
+        <span class="text-sm font-semibold tracking-wide">NASAFISHA</span>
+      </div>
 
       <div class="max-w-md space-y-5">
-        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ns-sun-500,#F5D142)]">
-          Nakuru County
+        <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#F5D142]">
+          NAKURU COUNTY
         </p>
-        <h1 class="text-4xl font-bold leading-[1.15]">
-          Contractor portal.
+        <h1 class="contractor-brand-title text-3xl leading-[1.12]">
+          Contractor<br>portal.
         </h1>
-        <p class="text-sm leading-relaxed text-emerald-100/75">
-          A signed, evidenced record of your SLA performance.
+        <p class="max-w-xs text-sm leading-relaxed text-[#C2D0C8]">
+          A shared, evidenced record of your SLA performance.
         </p>
       </div>
 
-      <!-- Wavy-line illustration (Figma) -->
       <svg
-        class="w-full max-w-xs text-white/25"
-        viewBox="0 0 240 72"
+        class="w-full max-w-xs text-[#8DABA0]/55"
+        viewBox="0 0 240 120"
         fill="none"
         aria-hidden="true"
       >
         <path
-          d="M0 12 Q 20 0 40 12 T 80 12 T 120 12 T 160 12 T 200 12 T 240 12"
+          d="M0 48C38 48 38 6 82 6S124 54 166 54 204 78 240 78"
           stroke="currentColor"
-          stroke-width="1.5"
+          stroke-width="0.8"
         />
         <path
-          d="M0 36 Q 20 24 40 36 T 80 36 T 120 36 T 160 36 T 200 36 T 240 36"
+          d="M0 60C40 60 42 18 84 18s40 48 82 48 38 24 74 24"
           stroke="currentColor"
-          stroke-width="1.5"
+          stroke-width="0.8"
         />
         <path
-          d="M0 60 Q 20 48 40 60 T 80 60 T 120 60 T 160 60 T 200 60 T 240 60"
+          d="M0 72c42 0 46-42 86-42s38 48 80 48 38 24 74 24"
           stroke="currentColor"
-          stroke-width="1.5"
+          stroke-width="0.8"
+        />
+        <path
+          d="M0 84c44 0 50-42 88-42s36 48 78 48 38 24 74 24"
+          stroke="currentColor"
+          stroke-width="0.8"
         />
         <circle
-          cx="196"
-          cy="36"
-          r="5"
-          fill="var(--ns-sun-500,#F5D142)"
+          cx="84"
+          cy="6"
+          r="3.5"
+          fill="#F5D142"
         />
       </svg>
 
       <div class="space-y-1">
-        <p class="text-xs font-semibold tracking-wide text-emerald-100/85">
+        <p class="text-[10px] font-semibold tracking-wide text-[#D4E0DA]">
           Nakuru County Solid Waste Management
         </p>
-        <p class="text-xs tracking-wide text-emerald-100/60">
+        <p class="text-[10px] tracking-wide text-[#AFC2B8]">
           One waste. Shared visibility.
         </p>
       </div>
@@ -62,49 +72,33 @@
 
     <!-- Sign-in panel -->
     <div class="flex min-h-screen flex-col bg-white">
-      <header class="flex items-center justify-between px-6 py-5 lg:px-12">
-        <div class="lg:hidden">
+      <header class="flex items-center px-6 py-5 md:hidden">
+        <div>
           <BrandLogo
             size="sm"
             :with-text="false"
           />
         </div>
-
-        <div class="ml-auto flex items-center gap-2 rounded-full border border-[var(--ns-ash-200,#D5DBD9)] p-1">
-          <button
-            v-for="option in ['en', 'sw'] as const"
-            :key="option"
-            type="button"
-            class="rounded-full px-3 py-1 text-xs font-semibold transition"
-            :class="locale === option
-              ? 'bg-[var(--ns-lake-900,#0F2E27)] text-white'
-              : 'text-[var(--ns-ash-600,#4F5B57)] hover:text-[var(--ns-lake-900,#0F2E27)]'"
-            :aria-pressed="locale === option"
-            @click="setLocale(option)"
-          >
-            {{ option === 'en' ? 'EN' : 'SW' }}
-          </button>
-        </div>
       </header>
 
-      <main class="flex flex-1 items-center justify-center px-6 pb-12 lg:px-12">
-        <div class="w-full max-w-sm">
-          <div class="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--ns-lake-100,#DCEDE7)] text-[var(--ns-lake-700,#1F6F5C)]">
+      <main class="flex flex-1 items-center justify-center px-6 py-10 md:px-10">
+        <div class="w-full max-w-xs">
+          <div class="mb-4 flex h-8 w-8 items-center justify-center rounded-lg bg-[#E8F1EB] text-[#315D42]">
             <AppIcon
               name="user"
-              :size="22"
+              :size="15"
             />
           </div>
 
-          <h2 class="text-3xl font-bold tracking-tight text-[var(--ns-lake-900,#0F2E27)]">
+          <h2 class="text-2xl font-semibold leading-tight tracking-tight text-[#233E34]">
             Sign in to your account.
           </h2>
-          <p class="mt-2 text-sm text-[var(--ns-ash-600,#4F5B57)]">
-            View your zone's performance and the evidence behind every collection.
+          <p class="mt-2 text-xs leading-relaxed text-[#69736E]">
+            View your zone's performance and the evidence behind every closed ticket.
           </p>
 
           <form
-            class="mt-8 space-y-5"
+            class="mt-5 space-y-3"
             @submit.prevent="handleLogin"
           >
             <BaseAlert
@@ -121,7 +115,7 @@
               type="email"
               inputmode="email"
               autocomplete="username"
-              placeholder="m.mwangi@nakuru.go.ke"
+              placeholder="ops@wastelandscaping.co.ke"
               :required="true"
             />
 
@@ -130,50 +124,37 @@
               label="Password"
               type="password"
               autocomplete="current-password"
-              placeholder="••••••••"
+              placeholder="••••••••••"
               :required="true"
             />
 
             <BaseButton
               type="submit"
               variant="primary"
-              size="lg"
+              size="md"
               :block="true"
               :loading="authStore.isLoading"
             >
               <span class="inline-flex items-center justify-center gap-2">
                 {{ t('common.signIn') }}
-                <AppIcon
-                  name="arrow-right"
-                  :size="18"
-                />
+                <span
+                  class="ml-auto text-[#F5D142]"
+                  aria-hidden="true"
+                >→</span>
               </span>
             </BaseButton>
           </form>
 
-          <p class="mt-6 flex items-start gap-2 rounded-xl bg-[var(--ns-cream,#F9F6EB)] px-4 py-3 text-xs leading-relaxed text-[var(--ns-ash-700,#3B4743)]">
+          <GoogleSignInButton />
+
+          <p class="mt-4 flex items-start gap-2 text-[10px] leading-relaxed text-[#69736E]">
             <AppIcon
               name="lock"
-              :size="14"
-              class="mt-0.5 shrink-0 text-[var(--ns-lake-900,#0F2E27)]"
+              :size="12"
+              class="mt-0.5 shrink-0 text-[#233E34]"
             />
-            Read-only access to your zone. See the performance record you already have.
+            Read-only access to your zone. The same performance record as the county sees.
           </p>
-
-          <div class="mt-4 flex items-center gap-4 text-xs text-[var(--ns-ash-600,#4F5B57)]">
-            <router-link
-              class="underline underline-offset-2 hover:text-[var(--ns-lake-900,#0F2E27)]"
-              to="/citizen/login"
-            >
-              Citizen sign-in
-            </router-link>
-            <router-link
-              class="underline underline-offset-2 hover:text-[var(--ns-lake-900,#0F2E27)]"
-              to="/field/login"
-            >
-              Field crew sign-in
-            </router-link>
-          </div>
         </div>
       </main>
     </div>
@@ -183,6 +164,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import GoogleSignInButton from '../../components/auth/GoogleSignInButton.vue';
 import { AppIcon, BaseAlert, BaseButton, BaseInput, BrandLogo } from '../../components/common';
 import { useAuthStore } from '../../store/auth.store';
 import { useI18n } from '../../i18n';
@@ -190,7 +172,7 @@ import { useI18n } from '../../i18n';
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
-const { t, locale, setLocale } = useI18n();
+const { t } = useI18n();
 
 const email = ref('');
 const password = ref('');
@@ -212,3 +194,9 @@ async function handleLogin(): Promise<void> {
   }
 }
 </script>
+
+<style scoped>
+.contractor-brand-title {
+  font-weight: 400;
+}
+</style>

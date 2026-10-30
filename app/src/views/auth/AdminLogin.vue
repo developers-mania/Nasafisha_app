@@ -5,6 +5,7 @@ import { useI18n } from '../../i18n'
 import { useAuthStore } from '@/store/auth.store'
 import { homeRouteFor } from '@/config/roles'
 import { ERROR_CODES, getApiErrorCode } from '@/api/errorCodes'
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton.vue'
 
 const auth = useAuthStore()
 const route = useRoute()
@@ -91,6 +92,8 @@ async function onSubmit() {
         {{ isLoading ? t('adminLogin.submitting') : t('adminLogin.submit') }}
       </button>
     </form>
+
+    <GoogleSignInButton />
 
     <p class="mt-4 text-sm text-stone-600">{{ t('adminLogin.lockedHelp') }}</p>
   </section>

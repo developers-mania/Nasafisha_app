@@ -1,4 +1,8 @@
-import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
+import {
+  createRouter,
+  createWebHistory,
+  type RouteRecordRaw,
+} from 'vue-router';
 import AuthLayout from '../layouts/AuthLayout.vue';
 import adminRoutes from './routes/admin.routes';
 import citizenRoutes from './routes/citizen.routes';
@@ -7,11 +11,11 @@ import contractorRoutes from './routes/contractor.routes';
 import legacyRoutes from './routes/legacy.routes';
 import StaffLogin from '../views/auth/StaffLogin.vue';
 import AdminLogin from '../views/auth/AdminLogin.vue';
-import CitizenLogin from '../views/auth/CitizenLogin.vue';
+import GoogleAuthCallback from '../views/auth/GoogleAuthCallback.vue';
 import LanguageView from '../views/citizen/onboarding/LanguageView.vue';
 import AuthChoiceView from '../views/citizen/onboarding/AuthChoiceView.vue';
 import RegisterView from '../views/citizen/onboarding/RegisterView.vue';
-import PhoneView from '../views/citizen/onboarding/PhoneView.vue';
+import EmailOtpLogin from '../views/citizen/onboarding/EmailOtpLogin.vue';
 import OtpView from '../views/citizen/onboarding/OtpView.vue';
 import PermissionsView from '../views/citizen/onboarding/PermissionsView.vue';
 import AllSetView from '../views/citizen/onboarding/AllSetView.vue';
@@ -27,11 +31,25 @@ import { homeRouteFor } from '../config/roles';
  */
 function defaultHome(): string {
   const auth = useAuthStore();
-  return auth.isAuthenticated && auth.role ? homeRouteFor(auth.role) : '/citizen/welcome';
+  return auth.isAuthenticated && auth.role
+    ? homeRouteFor(auth.role)
+    : '/citizen/welcome';
 }
 
 const routes: RouteRecordRaw[] = [
   // Public & Authentication routes (AuthLayout shell — FE-031)
+  {
+    path: '/auth/callback',
+    component: AuthLayout,
+    children: [
+      {
+        path: '',
+        name: 'GoogleAuthCallback',
+        component: GoogleAuthCallback,
+        meta: { title: 'Google Sign-In' },
+      },
+    ],
+  },
   {
     path: '/login',
     component: AuthLayout,
@@ -63,7 +81,7 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
-  // Citizen onboarding: language → phone → OTP → camera/location (Figma mobile flow)
+  // Citizen onboarding: language → email code → camera/location.
   {
     path: '/citizen/welcome',
     name: 'CitizenLanguage',
@@ -95,7 +113,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/citizen/login',
     name: 'CitizenLogin',
-    component: PhoneView,
+    component: EmailOtpLogin,
     meta: {
       guestOnly: true,
       title: 'Citizen Sign-In',
@@ -110,21 +128,9 @@ const routes: RouteRecordRaw[] = [
       title: 'Enter code',
     },
   },
-  // Email + password alternative to the phone/OTP flow
   {
     path: '/citizen/login/email',
-    component: AuthLayout,
-    children: [
-      {
-        path: '',
-        name: 'CitizenEmailLogin',
-        component: CitizenLogin,
-        meta: {
-          guestOnly: true,
-          title: 'Citizen Sign-In',
-        },
-      },
-    ],
+    redirect: '/citizen/login',
   },
   {
     path: '/citizen/onboarding/permissions',

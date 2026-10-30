@@ -5,9 +5,13 @@
     <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
       <!-- Logo -->
       <div class="flex items-center space-x-2">
-        <img src="/logo.png" alt="Logo" class="h-12 w-auto" />
+        <img
+          src="/logo.png"
+          alt="NASAFISHA — NAKURU CLEAN — MUNICIPAL SOLID WASTE MANAGEMENT. NAKURU COUNTY."
+          class="h-12 w-auto"
+        />
         <span class="text-xl font-semibold text-gray-800 dark:text-white"
-          >Vue Template</span
+          >NASAFISHA</span
         >
       </div>
 

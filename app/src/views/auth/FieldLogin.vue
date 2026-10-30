@@ -275,6 +275,8 @@
             </BaseButton>
           </form>
 
+          <GoogleSignInButton />
+
           <p class="mt-5 text-center text-xs text-[var(--ns-ash-600,#4F5B57)]">
             Your PIN is 6 digits. Forgot it? Ask your supervisor.
           </p>
@@ -303,6 +305,7 @@
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { AppIcon, BaseAlert, BaseButton, BaseInput, BrandLogo } from '../../components/common';
+import GoogleSignInButton from '../../components/auth/GoogleSignInButton.vue';
 import { useAuthStore } from '../../store/auth.store';
 import { useI18n } from '../../i18n';
 

@@ -14,8 +14,8 @@ import PostsView from '../../views/PostsView.vue';
 import PiniaTest from '../../views/PiniaTest.vue';
 import ApiTestView from '../../views/ApiTestView.vue';
 import CitizenReportView from '../../views/citizen/citizen_report.vue';
-import ContractorLoginView from '../../views/contractors/ContractorLoginView.vue';
-import EvidenceLedgerView from '../../views/contractors/EvidenceLedgerView.vue';
+import ContractorLoginView from '../../views/auth/ContractorLogin.vue';
+import EvidenceLedgerView from '../../views/contractor/EvidenceLedgerView.vue';
 
 /**
  * Legacy/demo screens kept for reference. No auth guard — the old

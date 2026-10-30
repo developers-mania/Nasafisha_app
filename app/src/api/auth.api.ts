@@ -1,151 +1,225 @@
 import { api } from './http';
 import type { ApiResponse } from '../types/api';
-import type { User, AuthSession, LoginCredentials, UserRole } from '../types/user';
+import type {
+  User,
+  AuthSession,
+  LoginCredentials,
+  UserRole,
+} from '../types/user';
 
-// Mock test credentials for local demo
-const MOCK_USERS: Record<UserRole, User> = {
-  admin: {
-    id: 'usr_adm_01',
-    name: 'Kelvin Kamau (Super Admin)',
-    email: 'admin@nasafisha.nakuru.go.ke',
-    role: 'admin',
-    assignedZone: 'All Nakuru Zones',
-  },
-  citizen: {
-    id: 'usr_ctz_01',
-    name: 'Wanjiru Mwangi',
-    phone: '+254 712 345 678',
-    role: 'citizen',
-    assignedZone: 'Nakuru East - Section 58',
-  },
-  field: {
-    id: 'usr_fld_01',
-    name: 'Brian Omondi',
-    badgeNumber: 'FLD-2026-44',
-    role: 'field',
-    assignedZone: 'Zone B — Bondeni / Kivumbini',
-  },
-  contractor: {
-    id: 'usr_cnt_01',
-    name: 'Winfred Njeri (Compliance Lead)',
-    companyName: 'Nakuru Green Clean Franchise Ltd',
-    contractorId: 'CNT-NK-003',
-    role: 'contractor',
-    assignedZone: 'Nakuru East Franchise Area',
-  },
-};
+interface BackendUser {
+  id: string | number;
+  name: string;
+  email?: string;
+  role: string;
+  zone?: string | null;
+  assignedZone?: string | null;
+  companyName?: string | null;
+  crewLabel?: string | null;
+  employeeId?: string;
+}
+
+interface BackendAuthResponse {
+  token?: string;
+  access_token?: string;
+  user?: BackendUser;
+}
+
+function mapBackendRole(role: string): UserRole | null {
+  if (
+    ['admin', 'executive', 'operations_manager', 'county_ict_admin'].includes(
+      role,
+    )
+  ) {
+    return 'admin';
+  }
+  if (['field', 'field_crew', 'field_supervisor'].includes(role))
+    return 'field';
+  if (role === 'citizen' || role === 'contractor') return role;
+  return null;
+}
+
+function mapBackendUser(user: BackendUser): User {
+  const role = mapBackendRole(user.role);
+  if (!role) {
+    throw new Error(
+      `The backend returned an unsupported account role: ${user.role}`,
+    );
+  }
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role,
+    assignedZone: user.assignedZone ?? user.zone ?? undefined,
+    companyName: user.companyName ?? user.crewLabel ?? undefined,
+    badgeNumber: user.employeeId,
+  };
+}
+
+function toAuthSession(
+  response: BackendAuthResponse,
+  expectedRole: UserRole,
+): AuthSession {
+  const token = response.token ?? response.access_token;
+  if (!token || !response.user) {
+    throw new Error('The backend returned an incomplete sign-in response.');
+  }
+
+  const user = mapBackendUser(response.user);
+  if (user.role !== expectedRole) {
+    throw new Error(
+      'The signed-in account does not have access to this portal.',
+    );
+  }
+
+  return { token, user };
+}
+
+function apiErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'object' && error !== null && 'error' in error) {
+    const payload = error.error;
+    if (
+      typeof payload === 'object' &&
+      payload !== null &&
+      'message' in payload &&
+      (typeof payload.message === 'string' ||
+        (Array.isArray(payload.message) &&
+          payload.message.every(
+            (message: unknown) => typeof message === 'string',
+          )))
+    ) {
+      return Array.isArray(payload.message)
+        ? payload.message.join(', ')
+        : payload.message;
+    }
+  }
+  return 'The backend request failed.';
+}
 
 export const authApi = {
-  /**
-   * Unified login supporting admin, citizen, field, and contractor credentials
-   */
   async login(payload: LoginCredentials): Promise<ApiResponse<AuthSession>> {
+    let path: string;
+    let credentials: Record<string, string>;
+
+    switch (payload.role) {
+      case 'admin':
+        path = '/auth/admin/login';
+        credentials = {
+          email: payload.email ?? '',
+          password: payload.password ?? '',
+        };
+        break;
+      case 'contractor':
+        path = '/auth/contractor/login';
+        credentials = {
+          email: payload.email ?? '',
+          password: payload.password ?? '',
+        };
+        break;
+      case 'field':
+        path = '/auth/crew/login';
+        credentials = {
+          employeeId: payload.contractorCode ?? '',
+          pin: payload.password ?? '',
+        };
+        break;
+      case 'citizen':
+        throw new Error(
+          'Citizen password sign-in is not available in the NestJS API. This screen needs the citizen email-code flow.',
+        );
+    }
+
     try {
-      const response = await api.post<AuthSession>('/auth/login', payload);
-      return response;
-    } catch {
-      // Mock fallback for standalone frontend development
-      const targetUser = MOCK_USERS[payload.role] || {
-        id: `usr_${Date.now()}`,
-        name: payload.email || payload.phone || payload.contractorCode || 'Authorized User',
-        role: payload.role,
-      };
-
-      const mockSession: AuthSession = {
-        token: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify(targetUser))}.mock_signature_2026`,
-        user: targetUser,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      };
-
+      const response = await api.post<BackendAuthResponse>(path, credentials);
+      if (!response.data) {
+        throw new Error('The backend returned an empty sign-in response.');
+      }
       return {
-        success: true,
-        data: mockSession,
-        message: `Authenticated successfully as ${payload.role}`,
+        ...response,
+        data: toAuthSession(response.data, payload.role),
       };
+    } catch (error) {
+      throw new Error(apiErrorMessage(error));
     }
   },
 
-  /**
-   * Contractor portal specific login
-   */
-  async loginContractor(contractorCode: string, accessKey: string): Promise<ApiResponse<AuthSession>> {
-    return this.login({
-      contractorCode,
-      password: accessKey,
-      role: 'contractor',
-    });
+  async loginContractor(
+    email: string,
+    password: string,
+  ): Promise<ApiResponse<AuthSession>> {
+    return this.login({ email, password, role: 'contractor' });
   },
 
-  /**
-   * Citizen OTP authentication (FR-001)
-   */
-  async loginCitizen(phone: string, otp: string): Promise<ApiResponse<AuthSession>> {
-    return this.login({
-      phone,
-      otp,
-      role: 'citizen',
-    });
+  async loginCitizen(
+    email: string,
+    code: string,
+    name?: string,
+  ): Promise<ApiResponse<AuthSession>> {
+    try {
+      const response = await api.post<BackendAuthResponse>('/auth/otp/verify', {
+        email,
+        code,
+        ...(name ? { name } : {}),
+      });
+      if (!response.data) {
+        throw new Error('The backend returned an empty sign-in response.');
+      }
+      return {
+        ...response,
+        data: toAuthSession(response.data, 'citizen'),
+      };
+    } catch (error) {
+      throw new Error(apiErrorMessage(error));
+    }
   },
 
-  /**
-   * Staff login (Admin)
-   */
-  async loginStaff(email: string, password: string): Promise<ApiResponse<AuthSession>> {
-    return this.login({
-      email,
-      password,
-      role: 'admin',
-    });
+  async requestCitizenOtp(
+    email: string,
+  ): Promise<ApiResponse<{ email: string }>> {
+    try {
+      return await api.post<{ email: string }>('/auth/otp/request', { email });
+    } catch (error) {
+      throw new Error(apiErrorMessage(error));
+    }
   },
 
-  /**
-   * Field crew PIN authentication (FR-002)
-   */
-  async loginField(badgeNumber: string, pin: string): Promise<ApiResponse<AuthSession>> {
+  async loginStaff(
+    email: string,
+    password: string,
+  ): Promise<ApiResponse<AuthSession>> {
+    return this.login({ email, password, role: 'admin' });
+  },
+
+  async loginField(
+    employeeId: string,
+    pin: string,
+  ): Promise<ApiResponse<AuthSession>> {
     return this.login({
-      contractorCode: badgeNumber,
+      contractorCode: employeeId,
       password: pin,
       role: 'field',
     });
   },
 
-  /**
-   * Validate current session
-   */
   async me(): Promise<ApiResponse<User>> {
-    try {
-      return await api.get<User>('/auth/me');
-    } catch {
-      const savedUserStr = localStorage.getItem('nasafisha_auth_user');
-      if (savedUserStr) {
-        return {
-          success: true,
-          data: JSON.parse(savedUserStr),
-          message: 'Session valid',
-        };
-      }
-      throw {
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'No active session' },
-      };
+    const response = await api.get<BackendUser>('/auth/me');
+    if (!response.data) {
+      throw new Error('The backend returned an empty session response.');
     }
+    return { ...response, data: mapBackendUser(response.data) };
   },
 
-  /**
-   * Logout
-   */
   async logout(): Promise<ApiResponse<null>> {
-    try {
-      await api.post('/auth/logout');
-    } catch {
-      // Ignore network errors on logout
-    }
     localStorage.removeItem('nasafisha_auth_token');
     localStorage.removeItem('nasafisha_auth_user');
+    localStorage.removeItem('nasafisha_auth_provider');
     return {
       success: true,
       data: null,
-      message: 'Logged out successfully',
+      message: 'Signed out on this device',
     };
   },
 };

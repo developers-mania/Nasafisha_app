@@ -1,8 +1,10 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios';
 import type { ApiResponse } from '../types/api';
+import env from '../config/env';
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const baseURL = env.apiBaseUrl;
 const TOKEN_KEY = 'nasafisha_auth_token';
+const AUTH_PROVIDER_KEY = 'nasafisha_auth_provider';
 
 export const httpClient: AxiosInstance = axios.create({
   baseURL,
@@ -17,7 +19,8 @@ export const httpClient: AxiosInstance = axios.create({
 httpClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem(TOKEN_KEY);
-    if (token && config.headers) {
+    const authProvider = localStorage.getItem(AUTH_PROVIDER_KEY);
+    if (token && authProvider !== 'supabase' && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;

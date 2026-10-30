@@ -18,7 +18,7 @@ export interface AppEnv {
 }
 
 export const env: AppEnv = {
-  apiBaseUrl: rawEnv.VITE_API_BASE_URL || 'http://localhost:3000',
+  apiBaseUrl: rawEnv.VITE_API_BASE_URL || 'http://localhost:4000',
   appName: rawEnv.VITE_APP_NAME || 'Nasafisha',
   mode: rawEnv.MODE || 'development',
   isDev: Boolean(rawEnv.DEV),

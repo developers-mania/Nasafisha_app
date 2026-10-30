@@ -20,7 +20,12 @@ const props = withDefaults(
     onDark?: boolean;
     alt?: string;
   }>(),
-  { size: 'md', withText: true, onDark: false, alt: 'Nasafisha — Nakuru Clean' }
+  {
+    size: 'md',
+    withText: true,
+    onDark: false,
+    alt: 'NASAFISHA — NAKURU CLEAN — MUNICIPAL SOLID WASTE MANAGEMENT. NAKURU COUNTY.'
+  }
 );
 
 const imageClass = computed(() => {

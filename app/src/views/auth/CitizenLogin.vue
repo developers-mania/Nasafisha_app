@@ -42,6 +42,8 @@
       </BaseButton>
     </form>
 
+    <GoogleSignInButton />
+
     <p class="mt-6 text-center text-xs text-[var(--ns-ash-600,#4F5B57)]">
       Field crew?
       <router-link class="font-semibold underline underline-offset-2 text-[var(--ns-lake-800,#185746)]" to="/field/login">
@@ -55,6 +57,7 @@
 import { reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { BaseAlert, BaseButton, BaseInput } from '../../components/common';
+import GoogleSignInButton from '../../components/auth/GoogleSignInButton.vue';
 import { useAuthStore } from '../../store/auth.store';
 
 const router = useRouter();

@@ -4,7 +4,11 @@
       class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between"
     >
       <div class="flex items-center space-x-2 text-sm font-medium mb-2 sm:mb-0">
-        <img src="/logo.png" alt="Logo" class="h-8 w-auto" />
+        <img
+          src="/logo.png"
+          alt="NASAFISHA — NAKURU CLEAN — MUNICIPAL SOLID WASTE MANAGEMENT. NAKURU COUNTY."
+          class="h-8 w-auto"
+        />
         <span>© {{ currentYear }} Info-Space Meta. All rights reserved.</span>
       </div>
 
